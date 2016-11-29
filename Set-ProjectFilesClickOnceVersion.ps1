@@ -62,7 +62,6 @@
 Param
 (
 	[Parameter(Mandatory=$true,HelpMessage="The project file to update the ClickOnce Version in.")]
-	[ValidateScript(Test-Path -Path $_ -PathType Leaf)]
 	[string]$ProjectFilePath = '',
 
 	[Parameter(Mandatory=$false,HelpMessage="The new version number to use for the ClickOnce application.")]
@@ -80,6 +79,7 @@ Param
 )
 
 # If we can't find the project file path to update, exit with an error.
+$ProjectFilePath = Resolve-Path -Path $ProjectFilePath
 if (!(Test-Path $ProjectFilePath -PathType Leaf))
 {
 	throw "Could not locate the project file to update at the path '$ProjectFilePath'."
@@ -203,16 +203,17 @@ if ($clickOncePropertyGroups -eq $null -or $clickOncePropertyGroups.Count -eq 0)
 foreach ($propertyGroup in $clickOncePropertyGroups)
 {
 	# If the Version to use was not provided, get it from the project file.
-	if ([string]::IsNullOrEmpty($Version))
+	$appVersion = $Version
+	if ([string]::IsNullOrEmpty($appVersion))
 	{
-		$Version = $propertyGroup.ApplicationVersion
+		$appVersion = $propertyGroup.ApplicationVersion
 	}
 	
 	# Get the Major, Minor, and Build parts of the version number.
-	$majorMinorBuildMatch = $majorMinorBuildRegex.Match($Version)
+	$majorMinorBuildMatch = $majorMinorBuildRegex.Match($appVersion)
 	if (!$majorMinorBuildMatch.Success)
 	{
-		throw "The version number '$Version' does not seem to have valid Major.Minor.Build version parts."
+		throw "The version number '$appVersion' does not seem to have valid Major.Minor.Build version parts."
 	}
 	$majorMinorBuild = $majorMinorBuildMatch.Value
 
