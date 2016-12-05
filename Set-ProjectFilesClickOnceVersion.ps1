@@ -56,7 +56,7 @@
 	
 .NOTES
 	Author: Daniel Schroeder
-	Version: 1.0.0
+	Version: 1.0.1
 #>
 
 Param
@@ -240,7 +240,15 @@ foreach ($propertyGroup in $clickOncePropertyGroups)
 		}
 	}
 	
-	$Revision %= 65535 # Make sure the revision version part is not greater than the allowed value (16-bit int).
+	# Make sure the revision version part is not greater than the allowed value (16-bit int).
+	[int]$maxVersionPartValueAllowed = 65535
+	if ($Revision -gt $maxVersionPartValueAllowed)
+	{
+		Write-Warning "The Revision value '$Revision' to use for the last part of the version number is greater than the max allowed value of '$maxVersionPartValueAllowed'. The modulus will be used for the revision instead. If this results in your ClickOnce deployment not downloading the latest update and giving an error message like 'Cannot activate a deployment with earlier version than the current minimum required version of the application.' then you will need to increment the Build part of the ClickOnce <ApplicationVersion> value stored in the project file."
+		$Revision %= $maxVersionPartValueAllowed
+	}
+	
+	# Create the version number to use for the ClickOnce version.
 	$newVersionNumber = "$majorMinorBuild.$Revision"
 	Write-Output "Updating version number to be '$newVersionNumber'."
 	

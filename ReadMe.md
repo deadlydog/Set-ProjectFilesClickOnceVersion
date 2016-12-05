@@ -17,35 +17,35 @@ Setting the MinimumRequiredVersion property forces the ClickOnce application to 
 
 # Examples
 
-1. Update a project file's ClickOnce version.
+Update a project file's ClickOnce version.
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3.4'
 ```
 
 ---
 
-2. Update just the Revision part of a project file's ClickOnce version.
+Update just the Revision part of a project file's ClickOnce version.
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Revision 12345
 ```
 
 ---
 
-3. Increment the Revision of a project file's ClickOnce version.
+Increment the Revision of a project file's ClickOnce version.
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -IncrementProjectFilesRevision
 ```
 
 ---
 
-4. Update a project file's ClickOnce Minimum Required Version to match its current version.
+Update a project file's ClickOnce Minimum Required Version to match its current version.
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -UpdateMinimumRequiredVersionToCurrentVersion
 ```
 
 ---
 
-5. Update a project file's ClickOnce version, ignoring the Revision part and incrementing the Revision stored in the file, and update the Minimum Required Version to be this new version.
+Update a project file's ClickOnce version, ignoring the Revision part and incrementing the Revision stored in the file, and update the Minimum Required Version to be this new version.
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3' -IncrementProjectFilesRevision -UpdateMinimumRequiredVersionToCurrentVersion
 ```
