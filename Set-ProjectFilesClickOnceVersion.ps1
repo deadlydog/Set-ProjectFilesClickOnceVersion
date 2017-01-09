@@ -243,7 +243,7 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 	if ($BuildSystemsBuildId -gt -1)
 	{
 		# Use a calculation for the Build and Revision to prevent the Revision value from being too large, and to increment the Build value as the BuildSystemsBuildId continues to grow larger.
-		$build = $BuildSystemsBuildId / $maxVersionPartValueAllowed
+		$build = [int]($BuildSystemsBuildId / $maxVersionPartValueAllowed)
 		$revision = $BuildSystemsBuildId % $maxVersionPartValueAllowed
 	}
 
