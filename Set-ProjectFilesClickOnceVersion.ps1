@@ -59,7 +59,7 @@
 	Author: Daniel Schroeder
 	Version: 2.0.0
 #>
-
+[CmdletBinding(DefaultParameterSetName="UseBuildSystemsBuildId")]
 Param
 (
 	[Parameter(Mandatory=$true,HelpMessage="The project file to update the ClickOnce Version in.")]
@@ -192,12 +192,20 @@ function Set-XmlNodesElementTextValue([xml]$xml, $node, $elementName, $textValue
 # Define the max value that a version part is allowed to have (16-bit int).
 [int]$maxVersionPartValueAllowed = 65535
 
-# The regex used to obtain the Major.Minor.Build parts from a version number.
-$majorMinorBuildRegex = New-Object System.Text.RegularExpressions.Regex "(?<MajorMinor>^\d+\.\d+)\.(?<Build>\d+)", SingleLine
+# The regex used to obtain the Major.Minor.Build.Revision parts from a version number (revision is optional).
+$versionNumberRegex = New-Object System.Text.RegularExpressions.Regex "(?<MajorMinor>^\d+\.\d+)\.(?<Build>\d+)(\.(?<Revision>\d+))?", SingleLine
 
 # Open the Xml file and get the <PropertyGroup> elements with the ClickOnce properties in it.
 [xml]$xml = Get-Content -Path $ProjectFilePath
-$clickOncePropertyGroups = Get-XmlNodes -XmlDocument $xml -NodePath 'Project.PropertyGroup' | Where-Object { $_.ApplicationVersion -ne $null }
+$propertyGroups = Get-XmlNodes -XmlDocument $xml -NodePath 'Project.PropertyGroup'
+[Array]$clickOncePropertyGroups = $propertyGroups | Where-Object { 
+	try
+	{
+		$_.ApplicationVersion -ne $null
+		return $true
+	}
+	catch { return $false }
+}
 
 # If no ClickOnce deployment settings were found throw an error.
 if ($clickOncePropertyGroups -eq $null -or $clickOncePropertyGroups.Count -eq 0)
@@ -206,75 +214,82 @@ if ($clickOncePropertyGroups -eq $null -or $clickOncePropertyGroups.Count -eq 0)
 }
 
 # Iterate over each <PropertyGroup> that has ClickOnce deployment settings and update them.
-foreach ($propertyGroup in $clickOncePropertyGroups)
+foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 {
 	# If the Version to use was not provided, get it from the project file.
 	$appVersion = $Version
 	if ([string]::IsNullOrEmpty($appVersion))
 	{
-		$appVersion = $propertyGroup.ApplicationVersion
+		$appVersion = $clickOncePropertyGroup.ApplicationVersion
 	}
 	
 	# Get the Major, Minor, and Build parts of the version number.
-	$majorMinorBuildMatch = $majorMinorBuildRegex.Match($appVersion)
+	$majorMinorBuildMatch = $versionNumberRegex.Match($appVersion)
 	if (!$majorMinorBuildMatch.Success)
 	{
 		throw "The version number '$appVersion' does not seem to have valid Major.Minor.Build version parts."
 	}
 	$majorMinor = $majorMinorBuildMatch.Groups["MajorMinor"].Value
 	$build = $majorMinorBuildMatch.Groups["Build"].Value
+	$revision = -1
+	
+	# If a Revision was specified in the Version, get it.
+	if (![string]::IsNullOrWhiteSpace($majorMinorBuildMatch.Groups["Revision"]))
+	{
+		$revision = $majorMinorBuildMatch.Groups["Revision"]
+	}
 	
 	# If we should be using the BuildSystemsBuildId for the Build and Revision.
 	if ($BuildSystemsBuildId -gt -1)
 	{
 		# Use a calculation for the Build and Revision to prevent the Revision value from being too large, and to increment the Build value as the BuildSystemsBuildId continues to grow larger.
 		$build = $BuildSystemsBuildId / $maxVersionPartValueAllowed
-		$Revision %= $maxVersionPartValueAllowed
+		$revision = $BuildSystemsBuildId % $maxVersionPartValueAllowed
 	}
 
-	# Else if we should be incrementing the file's revision, get the Revision from the project file.
-	if ($IncrementProjectFilesRevision)
+	# Else if we should be incrementing the file's revision, or we don't have the revision yet, get the Revision from the project file.
+	if ($IncrementProjectFilesRevision -or $revision -eq -1)
 	{
 		# If the Revision is missing from the file, or not in a valid format, throw an error.
-		if ($propertyGroup.ApplicationRevision -eq $null)
+		$applicationRevisionString = $clickOncePropertyGroup.ApplicationRevision
+		if ($applicationRevisionString -eq $null)
 		{
 			throw "Could not find the <ApplicationRevision> element in the project file '$ProjectFilePath'."
-		}
-		$applicationRevisionString = $propertyGroup.ApplicationRevision
-		if (!($applicationRevisionString -imatch '^\d+$').Success)
+		}		
+		if (!($applicationRevisionString -imatch '^\d+$'))
 		{
 			throw "The <ApplicationRevision> elements value '$applicationRevisionString' in the file '$ProjectFilePath' does not appear to be a valid integer."
 		}
 		
-		$Revision = [int]::Parse($applicationRevisionString)
+		$revision = [int]::Parse($applicationRevisionString)
 		
 		# If the Revision should be incremented, do it.
 		if ($IncrementProjectFilesRevision)
 		{
-			$Revision = $Revision + 1
+			$revision = $revision + 1
 			
 			# Make sure the Revision version part is not greater than the max allowed value.
-			if ($Revision -gt $maxVersionPartValueAllowed)
+			if ($revision -gt $maxVersionPartValueAllowed)
 			{
-				Write-Warning "The Revision value '$Revision' to use for the last part of the version number is greater than the max allowed value of '$maxVersionPartValueAllowed'. The modulus will be used for the revision instead. If this results in your ClickOnce deployment not downloading the latest update and giving an error message like 'Cannot activate a deployment with earlier version than the current minimum required version of the application.' then you will need to increment the Build part of the ClickOnce <ApplicationVersion> value stored in the project file."
-				$Revision %= $maxVersionPartValueAllowed
+				Write-Warning "The Revision value '$revision' to use for the last part of the version number is greater than the max allowed value of '$maxVersionPartValueAllowed'. The modulus will be used for the revision instead. If this results in your ClickOnce deployment not downloading the latest update and giving an error message like 'Cannot activate a deployment with earlier version than the current minimum required version of the application.' then you will need to increment the Build part of the ClickOnce <ApplicationVersion> value stored in the project file."
+				$revision %= $maxVersionPartValueAllowed
 			}
 		}
 	}
 	
 	# Create the version number to use for the ClickOnce version.
 	$newMajorMinorBuild = "$majorMinor.$build"
-	$newVersionNumber = "$newMajorMinorBuild.$Revision"
+	$newVersionNumber = "$newMajorMinorBuild.$revision"
 	Write-Output "Updating version number to be '$newVersionNumber'."
 	
 	# Write the new values to the file.
-	Set-XmlNodesElementTextValue -xml $xml -node $propertyGroup -elementName 'ApplicationVersion' -textValue "$newMajorMinorBuild.%2a"
-	Set-XmlNodesElementTextValue -xml $xml -node $propertyGroup -elementName 'ApplicationRevision' -textValue $Revision.ToString()
+	Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'ApplicationVersion' -textValue "$newMajorMinorBuild.%2a"
+	Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'ApplicationRevision' -textValue $revision.ToString()
 	if ($UpdateMinimumRequiredVersionToCurrentVersion)
 	{
-		Set-XmlNodesElementTextValue -xml $xml -node $propertyGroup -elementName 'MinimumRequiredVersion' -textValue "$newVersionNumber"
-		Set-XmlNodesElementTextValue -xml $xml -node $propertyGroup -elementName 'UpdateRequired' -textValue 'true'
-		Set-XmlNodesElementTextValue -xml $xml -node $propertyGroup -elementName 'UpdateEnabled' -textValue 'true'
+		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'MinimumRequiredVersion' -textValue "$newVersionNumber"
+		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'UpdateRequired' -textValue 'true'
+		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'UpdateEnabled' -textValue 'true'
 	}
 }
 

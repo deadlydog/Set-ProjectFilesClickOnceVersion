@@ -4,7 +4,7 @@
 Set-StrictMode -Version Latest
 
 # Clear the screen before running our tests.
-cls
+Clear-Host
 
 # Get the directory that this script is in.
 $THIS_SCRIPTS_DIRECTORY = Split-Path $script:MyInvocation.MyCommand.Path
@@ -15,17 +15,21 @@ $scriptPath = Join-Path -Path $scriptDirectoryPath -ChildPath 'Set-ProjectFilesC
 
 # Get the path to the project file to use in our tests.
 $projectFilePath = Join-Path -Path (Join-Path -Path $THIS_SCRIPTS_DIRECTORY -ChildPath 'TestFiles') -ChildPath 'TestProject.csproj'
+$projectFilePathCopy = $projectFilePath + '_UsedByTests_.csproj'
 
-$runScriptExpression = "& $scriptPath -ProjectFilePath $projectFilePath "
+# Make a backup of the project file for the tests to run against.
+Copy-Item -Path $projectFilePath -Destination $projectFilePathCopy -Force
+
+$global:runScriptExpression = "& $scriptPath -ProjectFilePath $projectFilePathCopy "
 
 function RunScriptWithParameters($parameters)
 {
-	$output = Invoke-Expression "$runScriptExpression $parameters"
+	Invoke-Expression "$($global:runScriptExpression) $parameters"
 	
 }
-
+	
 $testNumber = 0
 
 Write-Host ("{0}. Explicitly set version number..." -f ++$testNumber)
-if ((RunScriptWithParameters "-Version 1.2.3.4 -IncrementProjectFilesRevision").EndsWith("'1.2.3.4'.")) { Write-Host "Passed" } else { throw "Test $testNumber failed." }
+if ((RunScriptWithParameters "-Version '1.2.3.4'").EndsWith("'1.2.3.4'.")) { Write-Host "Passed" } else { throw "Test $testNumber failed." }
 
