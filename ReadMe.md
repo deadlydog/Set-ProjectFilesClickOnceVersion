@@ -7,16 +7,16 @@ Setting the MinimumRequiredVersion property forces the ClickOnce application to 
 # Script Parameters
 * **ProjectFilePath** (required) - Path of the .csproj and .vbproj file to process.
 	
-* **Version** - The Version to update the ClickOnce version number to. This version must be of the format Major.Minor.Build or Major.Minor.Build.Revision. If provided, the Revision provided will be overridden by the Revision or IncrementProjectFilesRevision parameter if provided.
+* **Version** - The Version to update the ClickOnce version number to. This version must be of the format Major.Minor.Build or Major.Minor.Build.Revision. The Build and Revision parts will be overridden by the BuildSystemsBuildId and IncrementProjectFilesRevision parameters, if they are provided.
 
-* **Revision** - The Revision to use in the new Version number. This will override the Revision specified in the Version parameter if provided. This parameter cannot be used with the IncrementProjectFilesRevision parameter.
+* **BuildSystemsBuildId** - The build system's unique and auto-incrementing Build ID. This will be used to generate the Build and Revision parts of the new Version number. This will override the Build and Revision specified in the Version parameter, if it was provided. This parameter cannot be used with the IncrementProjectFilesRevision parameter.
 	
-* **IncrementProjectFilesRevision** - If this switch is provided, the Revision from the project file will be incremented and used in the new ClickOnce Version. This will override the Revision specified in the Version parameter if provided.
+* **IncrementProjectFilesRevision** - If this switch is provided, the Revision from the project file will be incremented and used in the new ClickOnce Version. This will override the Revision specified in the Version parameter, if it was provided.
 	
 * **UpdateMinimumRequiredVersionToCurrentVersion** - If this switch is provided, the ClickOnce MinimumRequiredVersion will be updated to match the new Version. Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
 
-# Examples
 
+# Examples
 Update a project file's ClickOnce version.
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3.4'
@@ -24,9 +24,9 @@ Update a project file's ClickOnce version.
 
 ---
 
-Update just the Revision part of a project file's ClickOnce version.
+Update just the Build and Revision parts of a project file's ClickOnce version.
 ```
-& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Revision 12345
+& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -BuildSystemsBuildId 123456
 ```
 
 ---

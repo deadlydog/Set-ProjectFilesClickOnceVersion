@@ -8,19 +8,20 @@
    Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
    
 .PARAMETER ProjectFilePath
-	Path of the .csproj and .vbproj file to process.
+	(required) Path of the .csproj and .vbproj file to process.
 	
 .PARAMETER Version
 	The Version to update the ClickOnce version number to. This version must be of the format Major.Minor.Build or Major.Minor.Build.Revision.
-	If provided, the Revision provided will be overridden by the Revision or IncrementProjectFilesRevision parameter if provided.
+	The Build and Revision parts will be overridden by the BuildSystemsBuildId and IncrementProjectFilesRevision parameters, if they are provided.
 
-.PARAMETER Revision
-	The Revision to use in the new Version number. This will override the Revision specified in the Version parameter if provided.
+.PARAMETER BuildSystemsBuildId
+	The build system's unique and auto-incrementing Build ID. This will be used to generate the Build and Revision parts of the new Version number.
+	This will override the Build and Revision specified in the Version parameter, if it was provided.
 	This parameter cannot be used with the IncrementProjectFilesRevision parameter.
 	
 .PARAMETER IncrementProjectFilesRevision
 	If this switch is provided, the Revision from the project file will be incremented and used in the new ClickOnce Version.
-	This will override the Revision specified in the Version parameter if provided.
+	This will override the Revision specified in the Version parameter, if it was provided.
 	
 .PARAMETER UpdateMinimumRequiredVersionToCurrentVersion
 	If this switch is provided, the ClickOnce MinimumRequiredVersion will be updated to match the new Version.
@@ -32,9 +33,9 @@
 	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3.4'
 
 .EXAMPLE
-	Update just the Revision part of a project file's ClickOnce version.
+	Update just the Build and Revision parts of a project file's ClickOnce version.
 	
-	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Revision 12345
+	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -BuildSystemsBuildId 123456
 
 .EXAMPLE
 	Increment the Revision of a project file's ClickOnce version.
@@ -56,7 +57,7 @@
 	
 .NOTES
 	Author: Daniel Schroeder
-	Version: 1.0.1
+	Version: 2.0.0
 #>
 
 Param
@@ -68,8 +69,9 @@ Param
 	[ValidatePattern('(?i)(^(\d+(\.\d+){2,3})$)')]
 	[string]$Version = [string]::Empty,
 
-	[Parameter(Mandatory=$false,HelpMessage="The Revision part of the version number. This will override the Revision specified in the Version parameter if provided.",ParameterSetName="UseExplicitRevision")]
-	[int]$Revision = -1,
+	[Parameter(Mandatory=$false,HelpMessage="The build system's unique, auto-incrementing Build ID. This will be used to generate the Build and Revision version parts.",ParameterSetName="UseBuildSystemsBuildId")]
+	[Alias("Id")]
+	[int]$BuildSystemsBuildId = -1,
 
 	[Parameter(Mandatory=$false,HelpMessage="Use and increment the Revision part of the version number stored in the project file.",ParameterSetName="UseFilesRevision")]
 	[switch]$IncrementProjectFilesRevision = $false,
@@ -86,9 +88,9 @@ if (!(Test-Path $ProjectFilePath -PathType Leaf))
 }
 
 # If there are no changes to make, just exit.
-if ([string]::IsNullOrEmpty($Version) -and $Revision -lt 0 -and !$IncrementProjectFilesRevision -and !$UpdateMinimumRequiredVersionToCurrentVersion)
+if ([string]::IsNullOrEmpty($Version) -and $BuildSystemsBuildId -lt 0 -and !$IncrementProjectFilesRevision -and !$UpdateMinimumRequiredVersionToCurrentVersion)
 {
-	Write-Warning "None of the following parameters were provided, so nothing will be changed: Version, Revision, IncrementProjectFilesRevision, UpdateMinimumRequiredVersionToCurrentVersion"
+	Write-Warning "None of the following parameters were provided, so nothing will be changed: Version, BuildSystemsBuildId, IncrementProjectFilesRevision, UpdateMinimumRequiredVersionToCurrentVersion"
 	return
 }
 
@@ -186,8 +188,11 @@ function Set-XmlNodesElementTextValue([xml]$xml, $node, $elementName, $textValue
 	}
 }
 
+# Define the max value that a version part is allowed to have (16-bit int).
+[int]$maxVersionPartValueAllowed = 65535
+
 # The regex used to obtain the Major.Minor.Build parts from a version number.
-$majorMinorBuildRegex = New-Object System.Text.RegularExpressions.Regex "^\d+\.\d+\.\d+", SingleLine
+$majorMinorBuildRegex = New-Object System.Text.RegularExpressions.Regex "(?<MajorMinor>^\d+\.\d+)\.(?<Build>\d+)", SingleLine
 
 # Open the Xml file and get the <PropertyGroup> elements with the ClickOnce properties in it.
 [xml]$xml = Get-Content -Path $ProjectFilePath
@@ -215,12 +220,21 @@ foreach ($propertyGroup in $clickOncePropertyGroups)
 	{
 		throw "The version number '$appVersion' does not seem to have valid Major.Minor.Build version parts."
 	}
-	$majorMinorBuild = $majorMinorBuildMatch.Value
-
-	# If the Revision to use was not provided, or we should be incrementing the file's revision, get it from the project file.
-	if ($Revision -lt 0 -or $IncrementProjectFilesRevision)
+	$majorMinor = $majorMinorBuildMatch.Groups["MajorMinor"].Value
+	$build = $majorMinorBuildMatch.Groups["Build"].Value
+	
+	# If we should be using the BuildSystemsBuildId for the Build and Revision.
+	if ($BuildSystemsBuildId -gt -1)
 	{
-		# If the Revision is misisng from the file, or not in a valid format, throw an error.
+		# Use a calculation for the Build and Revision to prevent the Revision value from being too large, and to increment the Build value as the BuildSystemsBuildId continues to grow larger.
+		$build = $BuildSystemsBuildId / $maxVersionPartValueAllowed
+		$Revision %= $maxVersionPartValueAllowed
+	}
+
+	# Else if we should be incrementing the file's revision, get the Revision from the project file.
+	if ($IncrementProjectFilesRevision)
+	{
+		# If the Revision is missing from the file, or not in a valid format, throw an error.
 		if ($propertyGroup.ApplicationRevision -eq $null)
 		{
 			throw "Could not find the <ApplicationRevision> element in the project file '$ProjectFilePath'."
@@ -237,23 +251,23 @@ foreach ($propertyGroup in $clickOncePropertyGroups)
 		if ($IncrementProjectFilesRevision)
 		{
 			$Revision = $Revision + 1
+			
+			# Make sure the Revision version part is not greater than the max allowed value.
+			if ($Revision -gt $maxVersionPartValueAllowed)
+			{
+				Write-Warning "The Revision value '$Revision' to use for the last part of the version number is greater than the max allowed value of '$maxVersionPartValueAllowed'. The modulus will be used for the revision instead. If this results in your ClickOnce deployment not downloading the latest update and giving an error message like 'Cannot activate a deployment with earlier version than the current minimum required version of the application.' then you will need to increment the Build part of the ClickOnce <ApplicationVersion> value stored in the project file."
+				$Revision %= $maxVersionPartValueAllowed
+			}
 		}
 	}
 	
-	# Make sure the revision version part is not greater than the allowed value (16-bit int).
-	[int]$maxVersionPartValueAllowed = 65535
-	if ($Revision -gt $maxVersionPartValueAllowed)
-	{
-		Write-Warning "The Revision value '$Revision' to use for the last part of the version number is greater than the max allowed value of '$maxVersionPartValueAllowed'. The modulus will be used for the revision instead. If this results in your ClickOnce deployment not downloading the latest update and giving an error message like 'Cannot activate a deployment with earlier version than the current minimum required version of the application.' then you will need to increment the Build part of the ClickOnce <ApplicationVersion> value stored in the project file."
-		$Revision %= $maxVersionPartValueAllowed
-	}
-	
 	# Create the version number to use for the ClickOnce version.
-	$newVersionNumber = "$majorMinorBuild.$Revision"
+	$newMajorMinorBuild = "$majorMinor.$build"
+	$newVersionNumber = "$newMajorMinorBuild.$Revision"
 	Write-Output "Updating version number to be '$newVersionNumber'."
 	
 	# Write the new values to the file.
-	Set-XmlNodesElementTextValue -xml $xml -node $propertyGroup -elementName 'ApplicationVersion' -textValue "$majorMinorBuild.%2a"
+	Set-XmlNodesElementTextValue -xml $xml -node $propertyGroup -elementName 'ApplicationVersion' -textValue "$newMajorMinorBuild.%2a"
 	Set-XmlNodesElementTextValue -xml $xml -node $propertyGroup -elementName 'ApplicationRevision' -textValue $Revision.ToString()
 	if ($UpdateMinimumRequiredVersionToCurrentVersion)
 	{
@@ -263,5 +277,5 @@ foreach ($propertyGroup in $clickOncePropertyGroups)
 	}
 }
 
-# Save the changes before commiting them back into source control.
+# Save the changes.
 $xml.Save($ProjectFilePath)
