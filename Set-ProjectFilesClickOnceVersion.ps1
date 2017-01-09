@@ -70,6 +70,7 @@ Param
 	[string]$Version = [string]::Empty,
 
 	[Parameter(Mandatory=$false,HelpMessage="The build system's unique, auto-incrementing Build ID. This will be used to generate the Build and Revision version parts.",ParameterSetName="UseBuildSystemsBuildId")]
+	[Alias("BuildId")]
 	[Alias("Id")]
 	[int]$BuildSystemsBuildId = -1,
 
