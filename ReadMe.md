@@ -1,7 +1,9 @@
 # Description
 This PowerShell script can be used to update a project file's (.csproj or .vbproj file) ClickOnce version, and to set the Minimum Required Version to the lastest version.
 
-Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
+This script is useful when publishing your ClickOnce application as part of your build and release system, since normally Visual Studio would automatically handle updating the ClickOnce version for you.
+
+Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user. If you are simply looking to have the Minimum Required Version update automatically, but still publish your ClickOnce application from Visual Studio, try using the [AutoUpdateProjectsMinimumRequiredClickOnceVersion NuGet Package][AutoUpdateProjectsMinimumRequiredClickOnceVersionNugetPackageWebpage].
 
 
 # Script Parameters
@@ -49,3 +51,5 @@ Update a project file's ClickOnce version, ignoring the Revision part and increm
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3' -IncrementProjectFilesRevision -UpdateMinimumRequiredVersionToCurrentVersion
 ```
+
+[AutoUpdateProjectsMinimumRequiredClickOnceVersionNugetPackageWebpage]: https://www.nuget.org/packages/AutoUpdateProjectsMinimumRequiredClickOnceVersion
