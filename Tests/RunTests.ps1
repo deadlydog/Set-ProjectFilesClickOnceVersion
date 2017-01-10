@@ -49,7 +49,7 @@ Write-Host ("{0}. Use Build Id parameter..." -f ++$testNumber)
 $output = RunScriptWithParameters "-BuildSystemsBuildId 1234"
 if ($output -eq '1.2.0.1234') { Write-Host "Passed" } else { throw "Test $testNumber failed. Output was '$output'." }
 
-Write-Host ("{0}. Use Build Id parameter greater than the max value to make sure build is set properly. Should also see Verbose statemnt..." -f ++$testNumber)
+Write-Host ("{0}. Use Build Id parameter greater than the max value to make sure build is set properly. Should also see Verbose statments..." -f ++$testNumber)
 $output = RunScriptWithParameters "-BuildSystemsBuildId 123456 -Verbose"
 if ($output -eq '1.2.1.57921') { Write-Host "Passed" } else { throw "Test $testNumber failed. Output was '$output'." }
 

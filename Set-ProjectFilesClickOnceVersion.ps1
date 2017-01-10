@@ -202,8 +202,7 @@ $propertyGroups = Get-XmlNodes -XmlDocument $xml -NodePath 'Project.PropertyGrou
 [Array]$clickOncePropertyGroups = $propertyGroups | Where-Object { 
 	try
 	{
-		$_.ApplicationVersion -ne $null
-		return $true
+		return ($_.ApplicationVersion -ne $null)
 	}
 	catch { return $false }
 }
@@ -215,8 +214,13 @@ if ($clickOncePropertyGroups -eq $null -or $clickOncePropertyGroups.Count -eq 0)
 }
 
 # Iterate over each <PropertyGroup> that has ClickOnce deployment settings and update them.
+$numberOfClickOncePropertyGroups = $clickOncePropertyGroups.Length
+$numberOfClickOncePropertyGroupsProcessed = 0
 foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 {
+	$numberOfClickOncePropertyGroupsProcessed++
+	Write-Verbose "Processing ClickOnce property group $numberOfClickOncePropertyGroupsProcessed of $numberOfClickOncePropertyGroups in file '$ProjectFilePath'."
+
 	# If the Version to use was not provided, get it from the project file.
 	$appVersion = $Version
 	if ([string]::IsNullOrEmpty($appVersion))
