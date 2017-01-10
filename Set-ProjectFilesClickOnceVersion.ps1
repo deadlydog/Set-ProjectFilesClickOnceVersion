@@ -246,6 +246,8 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 		# Use a calculation for the Build and Revision to prevent the Revision value from being too large, and to increment the Build value as the BuildSystemsBuildId continues to grow larger.
 		$build = [int][Math]::Floor($BuildSystemsBuildId / $maxVersionPartValueAllowed)
 		$revision = $BuildSystemsBuildId % $maxVersionPartValueAllowed
+		
+		Write-Verbose "Translated BuildSystemsBuildId '$BuildSystemsBuildId' into Build.Revision '$build.$revision'."
 	}
 
 	# Else if we should be incrementing the file's revision, or we don't have the revision yet, get the Revision from the project file.
