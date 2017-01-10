@@ -11,7 +11,7 @@ Setting the MinimumRequiredVersion property forces the ClickOnce application to 
 
 * **BuildSystemsBuildId** - The build system's unique and auto-incrementing Build ID. This will be used to generate the Build and Revision parts of the new Version number. This will override the Build and Revision specified in the Version parameter, if it was provided. This parameter cannot be used with the IncrementProjectFilesRevision parameter.
 	
-* **IncrementProjectFilesRevision** - If this switch is provided, the Revision from the project file will be incremented and used in the new ClickOnce Version. This will override the Revision specified in the Version parameter, if it was provided.
+* **IncrementProjectFilesRevision** - If this switch is provided, the Revision from the project file will be incremented and used in the new ClickOnce Version. This will override the Revision specified in the Version parameter, if it was provided. This parameter cannot be used with the BuildSystemsBuildId parameter.
 	
 * **UpdateMinimumRequiredVersionToCurrentVersion** - If this switch is provided, the ClickOnce MinimumRequiredVersion will be updated to match the new Version. Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
 

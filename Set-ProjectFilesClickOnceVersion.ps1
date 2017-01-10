@@ -23,6 +23,7 @@
 .PARAMETER IncrementProjectFilesRevision
 	If this switch is provided, the Revision from the project file will be incremented and used in the new ClickOnce Version.
 	This will override the Revision specified in the Version parameter, if it was provided.
+	This parameter cannot be used with the BuildSystemsBuildId parameter.
 	
 .PARAMETER UpdateMinimumRequiredVersionToCurrentVersion
 	If this switch is provided, the ClickOnce MinimumRequiredVersion will be updated to match the new Version.
