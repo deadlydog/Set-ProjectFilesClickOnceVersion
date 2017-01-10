@@ -75,6 +75,7 @@ Param
 	[int]$BuildSystemsBuildId = -1,
 
 	[Parameter(Mandatory=$false,HelpMessage="Use and increment the Revision part of the version number stored in the project file.",ParameterSetName="UseFilesRevision")]
+	[Alias("IncrementRevision")]
 	[switch]$IncrementProjectFilesRevision = $false,
 
 	[Parameter(Mandatory=$false,HelpMessage="When the switch is provided, the ClickOnce Minimum Required Version will be updated to this new version.")]
@@ -230,20 +231,20 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 		throw "The version number '$appVersion' does not seem to have valid Major.Minor.Build version parts."
 	}
 	$majorMinor = $majorMinorBuildMatch.Groups["MajorMinor"].Value
-	$build = $majorMinorBuildMatch.Groups["Build"].Value
-	$revision = -1
+	[int]$build = $majorMinorBuildMatch.Groups["Build"].Value
+	[int]$revision = -1
 	
 	# If a Revision was specified in the Version, get it.
 	if (![string]::IsNullOrWhiteSpace($majorMinorBuildMatch.Groups["Revision"]))
 	{
-		$revision = $majorMinorBuildMatch.Groups["Revision"]
+		$revision = [int]::Parse($majorMinorBuildMatch.Groups["Revision"])
 	}
 	
 	# If we should be using the BuildSystemsBuildId for the Build and Revision.
 	if ($BuildSystemsBuildId -gt -1)
 	{
 		# Use a calculation for the Build and Revision to prevent the Revision value from being too large, and to increment the Build value as the BuildSystemsBuildId continues to grow larger.
-		$build = [int]($BuildSystemsBuildId / $maxVersionPartValueAllowed)
+		$build = [int][Math]::Floor($BuildSystemsBuildId / $maxVersionPartValueAllowed)
 		$revision = $BuildSystemsBuildId % $maxVersionPartValueAllowed
 	}
 
@@ -287,6 +288,7 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 	Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'ApplicationRevision' -textValue $revision.ToString()
 	if ($UpdateMinimumRequiredVersionToCurrentVersion)
 	{
+		Write-Output "Updating minimum required version to be '$newVersionNumber'."
 		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'MinimumRequiredVersion' -textValue "$newVersionNumber"
 		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'UpdateRequired' -textValue 'true'
 		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'UpdateEnabled' -textValue 'true'
