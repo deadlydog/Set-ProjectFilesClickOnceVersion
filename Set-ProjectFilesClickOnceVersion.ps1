@@ -12,7 +12,8 @@
 	
 .PARAMETER Version
 	The Version to update the ClickOnce version number to. This version must be of the format Major.Minor.Build or Major.Minor.Build.Revision.
-	The Build and Revision parts will be overridden by the BuildSystemsBuildId and IncrementProjectFilesRevision parameters, if they are provided.
+	The Build and Revision parts will be overridden by the BuildSystemsBuildId parameter, if it is provided.
+	The Revision parts will be overriden by the IncrementProjectFilesRevision parameter, if it is provided.
 
 .PARAMETER BuildSystemsBuildId
 	The build system's unique and auto-incrementing Build ID. This will be used to generate the Build and Revision parts of the new Version number.
@@ -28,12 +29,12 @@
 	Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
 
 .EXAMPLE
-	Update a project file's ClickOnce version.
+	Update a project file's ClickOnce version to the specified version.
 	
 	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3.4'
 
 .EXAMPLE
-	Update just the Build and Revision parts of a project file's ClickOnce version.
+	Update the Build and Revision parts of a project file's ClickOnce version, based on a unique, auto-incrementing integer, such as a build system's Build ID.
 	
 	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -BuildSystemsBuildId 123456
 

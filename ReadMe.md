@@ -7,7 +7,7 @@ Setting the MinimumRequiredVersion property forces the ClickOnce application to 
 # Script Parameters
 * **ProjectFilePath** (required) - Path of the .csproj and .vbproj file to process.
 	
-* **Version** - The Version to update the ClickOnce version number to. This version must be of the format Major.Minor.Build or Major.Minor.Build.Revision. The Build and Revision parts will be overridden by the BuildSystemsBuildId and IncrementProjectFilesRevision parameters, if they are provided.
+* **Version** - The Version to update the ClickOnce version number to. This version must be of the format Major.Minor.Build or Major.Minor.Build.Revision. The Build and Revision parts will be overridden by the BuildSystemsBuildId parameter, if it is provided. The Revision parts will be overriden by the IncrementProjectFilesRevision parameter, if it is provided.
 
 * **BuildSystemsBuildId** - The build system's unique and auto-incrementing Build ID. This will be used to generate the Build and Revision parts of the new Version number. This will override the Build and Revision specified in the Version parameter, if it was provided. This parameter cannot be used with the IncrementProjectFilesRevision parameter.
 	
@@ -17,14 +17,14 @@ Setting the MinimumRequiredVersion property forces the ClickOnce application to 
 
 
 # Examples
-Update a project file's ClickOnce version.
+Update a project file's ClickOnce version to the specified version.
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3.4'
 ```
 
 ---
 
-Update just the Build and Revision parts of a project file's ClickOnce version.
+Update the Build and Revision parts of a project file's ClickOnce version, based on a unique, auto-incrementing integer, such as a build system's Build ID.
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -BuildSystemsBuildId 123456
 ```
