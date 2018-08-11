@@ -29,6 +29,12 @@
 	If this switch is provided, the ClickOnce MinimumRequiredVersion will be updated to match the new Version.
 	Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
 
+.PARAMETER PublishUrl
+	If this string is provided, it will update the PublishUrl. If it is not provided, the PublishUrl will remain what it is currently. This should be a UNC type file path (e.g. \\servername\foldername)
+
+.PARAMETER InstallUrl
+	If this string is provided, it will update the InstallUrl. If it is not provided the InstallUrl will remain what it is currently. This should be a URL type path (e.g. http://servername/foldername)
+
 .EXAMPLE
 	Update a project file's ClickOnce version to the specified version.
 	
@@ -54,6 +60,17 @@
 	
 	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3' -IncrementProjectFilesRevision -UpdateMinimumRequiredVersionToCurrentVersion
 	
+.EXAMPLE
+	Update a project file's ClickOnce version using both Version and a unique, auto-incrementing integer, such as a build system's Build ID. This will keep the major and minor versions you specify but update the build and revision (e.g. 1.0.1.5745)
+
+	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version 1.0.0.0 -BuildSystemBuildId 123456
+
+.EXAMPLE
+	Update a project file's ClickOnce version and its install and publish url values.
+
+	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version 1.0.1.9 -PublishUrl "\\servername\foldername" -InstallUrl "http://servername/foldername"
+
+
 .LINK
 	Project Home: https://github.com/deadlydog/Set-ProjectFilesClickOnceVersion
 	
@@ -81,7 +98,13 @@ Param
 	[switch]$IncrementProjectFilesRevision = $false,
 
 	[Parameter(Mandatory=$false,HelpMessage="When the switch is provided, the ClickOnce Minimum Required Version will be updated to this new version.")]
-	[switch]$UpdateMinimumRequiredVersionToCurrentVersion = $false
+	[switch]$UpdateMinimumRequiredVersionToCurrentVersion = $false,
+
+	[Parameter(Mandatory = $false, HelpMessage="The Publish URL to update to.")]
+	[string]$PublishUrl = '',
+
+	[Parameter(Mandatory = $false, HelpMessage="The Install URL to update to.")]
+	[string]$InstallUrl = ''
 )
 
 # If we can't find the project file path to update, exit with an error.
@@ -92,16 +115,16 @@ if (!(Test-Path $ProjectFilePath -PathType Leaf))
 }
 
 # If there are no changes to make, just exit.
-if ([string]::IsNullOrEmpty($Version) -and $BuildSystemsBuildId -lt 0 -and !$IncrementProjectFilesRevision -and !$UpdateMinimumRequiredVersionToCurrentVersion)
+if ([string]::IsNullOrEmpty($Version) -and $BuildSystemsBuildId -lt 0 -and !$IncrementProjectFilesRevision -and !$UpdateMinimumRequiredVersionToCurrentVersion -and !$InstallUrl -and !$PublishUrl)
 {
-	Write-Warning "None of the following parameters were provided, so nothing will be changed: Version, BuildSystemsBuildId, IncrementProjectFilesRevision, UpdateMinimumRequiredVersionToCurrentVersion"
+	Write-Warning "None of the following parameters were provided, so nothing will be changed: Version, BuildSystemsBuildId, IncrementProjectFilesRevision, UpdateMinimumRequiredVersionToCurrentVersion, InstallUrl and PublishUrl"
 	return
 }
 
 function Get-XmlNamespaceManager([xml]$XmlDocument, [string]$NamespaceURI = "")
 {
     # If a Namespace URI was not given, use the Xml document's default namespace.
-	if ([string]::IsNullOrEmpty($NamespaceURI)) { $NamespaceURI = $XmlDocument.DocumentElement.NamespaceURI }	
+	if ([string]::IsNullOrEmpty($NamespaceURI)) { $NamespaceURI = $XmlDocument.DocumentElement.NamespaceURI }
 	
 	# In order for SelectSingleNode() to actually work, we need to use the fully qualified node path along with an Xml Namespace Manager, so set them up.
 	[System.Xml.XmlNamespaceManager]$xmlNsManager = New-Object System.Xml.XmlNamespaceManager($XmlDocument.NameTable)
@@ -179,7 +202,7 @@ function Set-XmlElementsTextValue([xml]$XmlDocument, [string]$ElementPath, [stri
 
 function Set-XmlNodesElementTextValue([xml]$xml, $node, $elementName, $textValue)
 {
-	if ($node.($elementName) -eq $null)
+	if ($null -eq $node.($elementName))
 	{
 		$element = $xml.CreateElement($elementName, $xml.DocumentElement.NamespaceURI)		
 		$textNode = $xml.CreateTextNode($textValue)
@@ -210,7 +233,7 @@ $propertyGroups = Get-XmlNodes -XmlDocument $xml -NodePath 'Project.PropertyGrou
 }
 
 # If no ClickOnce deployment settings were found throw an error.
-if ($clickOncePropertyGroups -eq $null -or $clickOncePropertyGroups.Count -eq 0)
+if ($null -eq $clickOncePropertyGroups -or $clickOncePropertyGroups.Count -eq 0)
 {
 	throw "'$ProjectFilePath' does not appear to have any ClickOnce deployment settings in it. You must publish the project at least once to create the ClickOnce deployment settings."
 }
@@ -222,6 +245,24 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 {
 	$numberOfClickOncePropertyGroupsProcessed++
 	Write-Verbose "Processing ClickOnce property group $numberOfClickOncePropertyGroupsProcessed of $numberOfClickOncePropertyGroups in file '$ProjectFilePath'."
+
+	# If publish url is provided, update it
+	$publishUrl = $PublishUrl
+	if (![string]::IsNullOrEmpty($publishUrl))
+	{
+		Write-Verbose "Publish Url is '$publishUrl'"
+		Write-Output "Updating PublishUrl to be '$publishUrl'"
+		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'PublishUrl' -textValue "$publishUrl"
+	}
+
+	# If install url is provided, update it
+	$installUrl = $InstallUrl
+	if (![string]::IsNullOrEmpty($installUrl))
+	{
+		Write-Verbose "Install Url is '$installUrl'"
+		Write-Output "Updating Install Url to be '$installUrl'"
+		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'InstallUrl' -textValue "$installUrl"
+	}
 
 	# If the Version to use was not provided, get it from the project file.
 	$appVersion = $Version
@@ -261,7 +302,7 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 	{
 		# If the Revision is missing from the file, or not in a valid format, throw an error.
 		$applicationRevisionString = $clickOncePropertyGroup.ApplicationRevision
-		if ($applicationRevisionString -eq $null)
+		if ($null -eq $applicationRevisionString)
 		{
 			throw "Could not find the <ApplicationRevision> element in the project file '$ProjectFilePath'."
 		}		
