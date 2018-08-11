@@ -2,14 +2,14 @@
 <#
 .SYNOPSIS
    This script updates the ClickOnce version in a project file (.csproj or .vbproj), and may update the MinimumRequiredVersion to be this same version.
-   
+
 .DESCRIPTION
    This script updates the current ClickOnce version in a project file (.csproj or .vbproj), and may update the MinimumRequiredVersion to be this same version.
    Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
-   
+
 .PARAMETER ProjectFilePath
 	(required) Path of the .csproj and .vbproj file to process.
-	
+
 .PARAMETER Version
 	The Version to update the ClickOnce version number to. This version must be of the format Major.Minor.Build or Major.Minor.Build.Revision.
 	The Build and Revision parts will be overridden by the BuildSystemsBuildId parameter, if it is provided.
@@ -19,12 +19,12 @@
 	The build system's unique and auto-incrementing Build ID. This will be used to generate the Build and Revision parts of the new Version number.
 	This will override the Build and Revision specified in the Version parameter, if it was provided.
 	This parameter cannot be used with the IncrementProjectFilesRevision parameter.
-	
+
 .PARAMETER IncrementProjectFilesRevision
 	If this switch is provided, the Revision from the project file will be incremented and used in the new ClickOnce Version.
 	This will override the Revision specified in the Version parameter, if it was provided.
 	This parameter cannot be used with the BuildSystemsBuildId parameter.
-	
+
 .PARAMETER UpdateMinimumRequiredVersionToCurrentVersion
 	If this switch is provided, the ClickOnce MinimumRequiredVersion will be updated to match the new Version.
 	Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
@@ -37,29 +37,29 @@
 
 .EXAMPLE
 	Update a project file's ClickOnce version to the specified version.
-	
+
 	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3.4'
 
 .EXAMPLE
 	Update the Build and Revision parts of a project file's ClickOnce version, based on a unique, auto-incrementing integer, such as a build system's Build ID.
-	
+
 	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -BuildSystemsBuildId 123456
 
 .EXAMPLE
 	Increment the Revision of a project file's ClickOnce version.
-	
+
 	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -IncrementProjectFilesRevision
 
 .EXAMPLE
 	Update a project file's ClickOnce Minimum Required Version to match its current version.
-	
+
 	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -UpdateMinimumRequiredVersionToCurrentVersion
-	
+
 .EXAMPLE
 	Update a project file's ClickOnce version, ignoring the Revision part and incrementing the Revision stored in the file, and update the Minimum Required Version to be this new version.
-	
+
 	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3' -IncrementProjectFilesRevision -UpdateMinimumRequiredVersionToCurrentVersion
-	
+
 .EXAMPLE
 	Update a project file's ClickOnce version using both Version and a unique, auto-incrementing integer, such as a build system's Build ID. This will keep the major and minor versions you specify but update the build and revision (e.g. 1.0.1.5745)
 
@@ -68,12 +68,12 @@
 .EXAMPLE
 	Update a project file's ClickOnce version and its install and publish url values.
 
-	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version 1.0.1.9 -PublishUrl "\\servername\foldername" -InstallUrl "http://servername/foldername"
+	& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version 1.0.1.9 -PublishUrl "\\fileshare\foldername" -InstallUrl "http://fileshare/foldername"
 
 
 .LINK
 	Project Home: https://github.com/deadlydog/Set-ProjectFilesClickOnceVersion
-	
+
 .NOTES
 	Author: Daniel Schroeder
 	Version: 2.0.0
@@ -125,7 +125,7 @@ function Get-XmlNamespaceManager([xml]$XmlDocument, [string]$NamespaceURI = "")
 {
     # If a Namespace URI was not given, use the Xml document's default namespace.
 	if ([string]::IsNullOrEmpty($NamespaceURI)) { $NamespaceURI = $XmlDocument.DocumentElement.NamespaceURI }
-	
+
 	# In order for SelectSingleNode() to actually work, we need to use the fully qualified node path along with an Xml Namespace Manager, so set them up.
 	[System.Xml.XmlNamespaceManager]$xmlNsManager = New-Object System.Xml.XmlNamespaceManager($XmlDocument.NameTable)
 	$xmlNsManager.AddNamespace("ns", $NamespaceURI)
@@ -141,7 +141,7 @@ function Get-XmlNode([xml]$XmlDocument, [string]$NodePath, [string]$NamespaceURI
 {
 	$xmlNsManager = Get-XmlNamespaceManager -XmlDocument $XmlDocument -NamespaceURI $NamespaceURI
 	[string]$fullyQualifiedNodePath = Get-FullyQualifiedXmlNodePath -NodePath $NodePath -NodeSeparatorCharacter $NodeSeparatorCharacter
-	
+
 	# Try and get the node, then return it. Returns $null if the node was not found.
 	$node = $XmlDocument.SelectSingleNode($fullyQualifiedNodePath, $xmlNsManager)
 	return $node
@@ -159,21 +159,21 @@ function Get-XmlNodes([xml]$XmlDocument, [string]$NodePath, [string]$NamespaceUR
 
 function Get-XmlElementsTextValue([xml]$XmlDocument, [string]$ElementPath, [string]$NamespaceURI = "", [string]$NodeSeparatorCharacter = '.')
 {
-	# Try and get the node.	
+	# Try and get the node.
 	$node = Get-XmlNode -XmlDocument $XmlDocument -NodePath $ElementPath -NamespaceURI $NamespaceURI -NodeSeparatorCharacter $NodeSeparatorCharacter
-	
+
 	# If the node already exists, return its value, otherwise return null.
 	if ($node) { return $node.InnerText } else { return $null }
 }
 
 function Set-XmlElementsTextValue([xml]$XmlDocument, [string]$ElementPath, [string]$TextValue, [string]$NamespaceURI = "", [string]$NodeSeparatorCharacter = '.')
 {
-	# Try and get the node.	
+	# Try and get the node.
 	$node = Get-XmlNode -XmlDocument $XmlDocument -NodePath $ElementPath -NamespaceURI $NamespaceURI -NodeSeparatorCharacter $NodeSeparatorCharacter
-	
+
 	# If the node already exists, update its value.
 	if ($node)
-	{ 
+	{
 		$node.InnerText = $TextValue
 	}
 	# Else the node doesn't exist yet, so create it with the given value.
@@ -181,14 +181,14 @@ function Set-XmlElementsTextValue([xml]$XmlDocument, [string]$ElementPath, [stri
 	{
 		# Create the new element with the given value.
 		$elementName = $ElementPath.Substring($ElementPath.LastIndexOf($NodeSeparatorCharacter) + 1)
- 		$element = $XmlDocument.CreateElement($elementName, $XmlDocument.DocumentElement.NamespaceURI)		
+ 		$element = $XmlDocument.CreateElement($elementName, $XmlDocument.DocumentElement.NamespaceURI)
 		$textNode = $XmlDocument.CreateTextNode($TextValue)
 		$element.AppendChild($textNode) > $null
-		
+
 		# Try and get the parent node.
 		$parentNodePath = $ElementPath.Substring(0, $ElementPath.LastIndexOf($NodeSeparatorCharacter))
 		$parentNode = Get-XmlNode -XmlDocument $XmlDocument -NodePath $parentNodePath -NamespaceURI $NamespaceURI -NodeSeparatorCharacter $NodeSeparatorCharacter
-		
+
 		if ($parentNode)
 		{
 			$parentNode.AppendChild($element) > $null
@@ -204,7 +204,7 @@ function Set-XmlNodesElementTextValue([xml]$xml, $node, $elementName, $textValue
 {
 	if ($null -eq $node.($elementName))
 	{
-		$element = $xml.CreateElement($elementName, $xml.DocumentElement.NamespaceURI)		
+		$element = $xml.CreateElement($elementName, $xml.DocumentElement.NamespaceURI)
 		$textNode = $xml.CreateTextNode($textValue)
 		$element.AppendChild($textNode) > $null
 		$node.AppendChild($element) > $null
@@ -224,7 +224,7 @@ $versionNumberRegex = New-Object System.Text.RegularExpressions.Regex "(?<MajorM
 # Open the Xml file and get the <PropertyGroup> elements with the ClickOnce properties in it.
 [xml]$xml = Get-Content -Path $ProjectFilePath
 $propertyGroups = Get-XmlNodes -XmlDocument $xml -NodePath 'Project.PropertyGroup'
-[Array]$clickOncePropertyGroups = $propertyGroups | Where-Object { 
+[Array]$clickOncePropertyGroups = $propertyGroups | Where-Object {
 	try
 	{
 		return ($_.ApplicationVersion -ne $null)
@@ -270,7 +270,7 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 	{
 		$appVersion = $clickOncePropertyGroup.ApplicationVersion
 	}
-	
+
 	# Get the Major, Minor, and Build parts of the version number.
 	$majorMinorBuildMatch = $versionNumberRegex.Match($appVersion)
 	if (!$majorMinorBuildMatch.Success)
@@ -280,20 +280,20 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 	$majorMinor = $majorMinorBuildMatch.Groups["MajorMinor"].Value
 	[int]$build = $majorMinorBuildMatch.Groups["Build"].Value
 	[int]$revision = -1
-	
+
 	# If a Revision was specified in the Version, get it.
 	if (![string]::IsNullOrWhiteSpace($majorMinorBuildMatch.Groups["Revision"]))
 	{
 		$revision = [int]::Parse($majorMinorBuildMatch.Groups["Revision"])
 	}
-	
+
 	# If we should be using the BuildSystemsBuildId for the Build and Revision.
 	if ($BuildSystemsBuildId -gt -1)
 	{
 		# Use a calculation for the Build and Revision to prevent the Revision value from being too large, and to increment the Build value as the BuildSystemsBuildId continues to grow larger.
 		$build = [int][Math]::Floor($BuildSystemsBuildId / $maxVersionPartValueAllowed)
 		$revision = $BuildSystemsBuildId % $maxVersionPartValueAllowed
-		
+
 		Write-Verbose "Translated BuildSystemsBuildId '$BuildSystemsBuildId' into Build.Revision '$build.$revision'."
 	}
 
@@ -305,19 +305,19 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 		if ($null -eq $applicationRevisionString)
 		{
 			throw "Could not find the <ApplicationRevision> element in the project file '$ProjectFilePath'."
-		}		
+		}
 		if (!($applicationRevisionString -imatch '^\d+$'))
 		{
 			throw "The <ApplicationRevision> elements value '$applicationRevisionString' in the file '$ProjectFilePath' does not appear to be a valid integer."
 		}
-		
+
 		$revision = [int]::Parse($applicationRevisionString)
-		
+
 		# If the Revision should be incremented, do it.
 		if ($IncrementProjectFilesRevision)
 		{
 			$revision = $revision + 1
-			
+
 			# Make sure the Revision version part is not greater than the max allowed value.
 			if ($revision -gt $maxVersionPartValueAllowed)
 			{
@@ -326,12 +326,12 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 			}
 		}
 	}
-	
+
 	# Create the version number to use for the ClickOnce version.
 	$newMajorMinorBuild = "$majorMinor.$build"
 	$newVersionNumber = "$newMajorMinorBuild.$revision"
 	Write-Output "Updating version number to be '$newVersionNumber'."
-	
+
 	# Write the new values to the file.
 	Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'ApplicationVersion' -textValue "$newMajorMinorBuild.%2a"
 	Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'ApplicationRevision' -textValue $revision.ToString()
