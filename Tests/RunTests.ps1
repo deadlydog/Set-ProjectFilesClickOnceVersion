@@ -33,11 +33,11 @@ function RunScriptWithParameters($parameters)
 			return $matches["Version"]
 		}
 		# If $output contains multiple lines, it will be treated as a collection instead of a string and $matches will not be defined, so catch that case.
-		catch { return $output }		
+		catch { return $output }
 	}
 	return $output
 }
-	
+
 $testNumber = 0
 # Some tests are dependent on the order in which they are ran, which isn't ideal, but good enough for now.
 
@@ -60,3 +60,17 @@ if ($output -eq '1.2.1.57922') { Write-Host "Passed" } else { throw "Test $testN
 Write-Host ("{0}. Use version number parameter and update minimum required version..." -f ++$testNumber)
 $output = RunScriptWithParameters "-Version '5.6.7.8' -UpdateMinimumRequiredVersionToCurrentVersion"
 if ($output.Contains("Updating minimum required version to be '5.6.7.8'.")) { Write-Host "Passed" } else { throw "Test $testNumber failed. Output was '$output'." }
+
+Write-Host ("{0}. Use major/minor of version number parameter and Build Id parameter...." -f ++$testNumber)
+$output = RunScriptWithParameters "-Version '1.1.0.0' -BuildSystemsBuildId 123456"
+if ($output -eq '1.1.1.57921') { Write-Host "Passed" } else { throw "Test $testNumber failed. Output was '$output'." }
+
+Write-Host ("{0}. Use version and publish url parameter...." -f ++$testNumber)
+$output = RunScriptWithParameters "-Version '1.0.5.9' -PublishUrl '\\fileshare\foldername'"
+# Multiple output statements are objects in an array in the order they are outputted
+if ($output[0].Contains('\\fileshare\foldername') -AND $output[1].Contains('1.0.5.9')) { Write-Host "Passed" } else { throw "Test $testNumber failed. Output was '$output'." }
+
+Write-Host ("{0}. Use BuildId parameter, publish url parameter and install url parameter...." -f ++$testNumber)
+$output = RunScriptWithParameters "-BuildSystemsBuildId 123456 -PublishUrl '\\fileshare\foldername' -InstallUrl 'http://fileshare/foldername'"
+# Multiple output statements are objects in an array in the order they are outputted
+if ($output[0].Contains('\\fileshare\foldername') -AND $output[1].Contains('http://fileshare/foldername') -AND $output[2].Contains('1.0.1.57921')) { Write-Host "Passed" } else { throw "Test $testNumber failed. Output was '$output'." }

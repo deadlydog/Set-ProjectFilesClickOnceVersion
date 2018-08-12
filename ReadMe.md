@@ -8,15 +8,18 @@ Setting the MinimumRequiredVersion property forces the ClickOnce application to 
 
 # Script Parameters
 * **ProjectFilePath** (required) - Path of the .csproj and .vbproj file to process.
-	
+
 * **Version** - The Version to update the ClickOnce version number to. This version must be of the format Major.Minor.Build or Major.Minor.Build.Revision. The Build and Revision parts will be overridden by the BuildSystemsBuildId parameter, if it is provided. The Revision parts will be overriden by the IncrementProjectFilesRevision parameter, if it is provided.
 
 * **BuildSystemsBuildId** - The build system's unique and auto-incrementing Build ID. This will be used to generate the Build and Revision parts of the new Version number. This will override the Build and Revision specified in the Version parameter, if it was provided. This parameter cannot be used with the IncrementProjectFilesRevision parameter.
-	
+
 * **IncrementProjectFilesRevision** - If this switch is provided, the Revision from the project file will be incremented and used in the new ClickOnce Version. This will override the Revision specified in the Version parameter, if it was provided. This parameter cannot be used with the BuildSystemsBuildId parameter.
-	
+
 * **UpdateMinimumRequiredVersionToCurrentVersion** - If this switch is provided, the ClickOnce MinimumRequiredVersion will be updated to match the new Version. Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
 
+* **PublishUrl** - If this switch is provided, the ClickOnce PublishUrl will be updated. The publish url format is \\fileshare\foldername
+
+* **InstallUrl** - If this switch is provided, the ClickOnce InstallUrl will be updated. The install url format is http://fileshare/foldername
 
 # Examples
 Update a project file's ClickOnce version to the specified version.
@@ -50,6 +53,13 @@ Update a project file's ClickOnce Minimum Required Version to match its current 
 Update a project file's ClickOnce version, ignoring the Revision part and incrementing the Revision stored in the file, and update the Minimum Required Version to be this new version.
 ```
 & .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version '1.2.3' -IncrementProjectFilesRevision -UpdateMinimumRequiredVersionToCurrentVersion
+```
+
+---
+
+Update a project file's ClickOnce version and its install and publish url values.
+```
+& .\Set-ProjectFilesClickOnceVersion.ps1 -ProjectFilePath "C:\SomeProject.csproj" -Version 1.0.1.9 -PublishUrl "\\fileshare\foldername" -InstallUrl "http://fileshare/foldername"
 ```
 
 [AutoUpdateProjectsMinimumRequiredClickOnceVersionNugetPackageWebpage]: https://www.nuget.org/packages/AutoUpdateProjectsMinimumRequiredClickOnceVersion
