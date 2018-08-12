@@ -82,7 +82,7 @@
 Param
 (
 	[Parameter(Mandatory=$true,HelpMessage="The project file to update the ClickOnce Version in.")]
-	[string]$ProjectFilePath = '',
+	[string]$ProjectFilePath = [string]::Empty,
 
 	[Parameter(Mandatory=$false,HelpMessage="The new version number to use for the ClickOnce application.")]
 	[ValidatePattern('(?i)(^(\d+(\.\d+){2,3})$)')]
@@ -101,10 +101,10 @@ Param
 	[switch]$UpdateMinimumRequiredVersionToCurrentVersion = $false,
 
 	[Parameter(Mandatory = $false, HelpMessage="The Publish URL to update to.")]
-	[string]$PublishUrl = '',
+	[string]$PublishUrl = [string]::Empty,
 
 	[Parameter(Mandatory = $false, HelpMessage="The Install URL to update to.")]
-	[string]$InstallUrl = ''
+	[string]$InstallUrl = [string]::Empty
 )
 
 # If we can't find the project file path to update, exit with an error.
@@ -115,9 +115,9 @@ if (!(Test-Path $ProjectFilePath -PathType Leaf))
 }
 
 # If there are no changes to make, just exit.
-if ([string]::IsNullOrEmpty($Version) -and $BuildSystemsBuildId -lt 0 -and !$IncrementProjectFilesRevision -and !$UpdateMinimumRequiredVersionToCurrentVersion -and !$InstallUrl -and !$PublishUrl)
+if ([string]::IsNullOrEmpty($Version) -and $BuildSystemsBuildId -lt 0 -and !$IncrementProjectFilesRevision -and !$UpdateMinimumRequiredVersionToCurrentVersion -and [string]::IsNullOrEmpty($InstallUrl) -and [string]::IsNullOrEmpty($PublishUrl))
 {
-	Write-Warning "None of the following parameters were provided, so nothing will be changed: Version, BuildSystemsBuildId, IncrementProjectFilesRevision, UpdateMinimumRequiredVersionToCurrentVersion, InstallUrl and PublishUrl"
+	Write-Warning "None of the following parameters were provided, so nothing will be changed: Version, BuildSystemsBuildId, IncrementProjectFilesRevision, UpdateMinimumRequiredVersionToCurrentVersion, InstallUrl, and PublishUrl"
 	return
 }
 
@@ -246,22 +246,20 @@ foreach ($clickOncePropertyGroup in $clickOncePropertyGroups)
 	$numberOfClickOncePropertyGroupsProcessed++
 	Write-Verbose "Processing ClickOnce property group $numberOfClickOncePropertyGroupsProcessed of $numberOfClickOncePropertyGroups in file '$ProjectFilePath'."
 
-	# If publish url is provided, update it
-	$publishUrl = $PublishUrl
-	if (![string]::IsNullOrEmpty($publishUrl))
+	# If publish url is provided, update it.
+	if (![string]::IsNullOrEmpty($PublishUrl))
 	{
-		Write-Verbose "Publish Url is '$publishUrl'"
-		Write-Output "Updating PublishUrl to be '$publishUrl'"
-		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'PublishUrl' -textValue "$publishUrl"
+		Write-Verbose "Publish Url is '$PublishUrl'"
+		Write-Output "Updating PublishUrl to be '$PublishUrl'"
+		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'PublishUrl' -textValue "$PublishUrl"
 	}
 
-	# If install url is provided, update it
-	$installUrl = $InstallUrl
-	if (![string]::IsNullOrEmpty($installUrl))
+	# If install url is provided, update it.
+	if (![string]::IsNullOrEmpty($InstallUrl))
 	{
-		Write-Verbose "Install Url is '$installUrl'"
-		Write-Output "Updating Install Url to be '$installUrl'"
-		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'InstallUrl' -textValue "$installUrl"
+		Write-Verbose "Install Url is '$InstallUrl'"
+		Write-Output "Updating Install Url to be '$InstallUrl'"
+		Set-XmlNodesElementTextValue -xml $xml -node $clickOncePropertyGroup -elementName 'InstallUrl' -textValue "$InstallUrl"
 	}
 
 	# If the Version to use was not provided, get it from the project file.
