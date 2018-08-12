@@ -76,7 +76,7 @@
 
 .NOTES
 	Author: Daniel Schroeder
-	Version: 2.0.0
+	Version: 2.1.0
 #>
 [CmdletBinding(DefaultParameterSetName="UseBuildSystemsBuildId")]
 Param
