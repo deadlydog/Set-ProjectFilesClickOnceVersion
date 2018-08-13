@@ -17,7 +17,7 @@ Setting the MinimumRequiredVersion property forces the ClickOnce application to 
 
 * **UpdateMinimumRequiredVersionToCurrentVersion** - If this switch is provided, the ClickOnce MinimumRequiredVersion will be updated to match the new Version. Setting the MinimumRequiredVersion property forces the ClickOnce application to update automatically without prompting the user.
 
-* **PublishUrl** - If this switch is provided, the ClickOnce PublishUrl will be updated. The publish url format is \\fileshare\foldername
+* **PublishUrl** - If this switch is provided, the ClickOnce PublishUrl will be updated. The publish url format is \\\fileshare\foldername
 
 * **InstallUrl** - If this switch is provided, the ClickOnce InstallUrl will be updated. The install url format is http://fileshare/foldername
 
